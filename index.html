@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vim Vindicator: Ghostty Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+        :root {
+            /* Variables set by JS */
+            --bg-color: #1d2021;
+            --fg-color: #ebdbb2;
+            --cursor-bg: #d79921;
+            --cursor-fg: #1d2021;
+            --status-bg: #458588;
+            --status-fg: #fbf1c7;
+            --accent: #cc241d;
+            --selection: #504945;
+            --font-family: 'Courier New', monospace;
+            --border-radius: 4px;
+            --shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* LIGHT THEME (Solarized-ish) */
+        [data-theme="light"] {
+            --bg-color: #fdf6e3;
+            --fg-color: #657b83;
+            --cursor-bg: #859900;
+            --cursor-fg: #fff;
+            --status-bg: #268bd2;
+            --status-fg: #fff;
+            --accent: #dc322f;
+            --selection: #eee8d5;
+            --font-family: 'Courier New', monospace;
+        }
+
+        /* GHOSTTY THEME */
+        [data-theme="ghostty"] {
+            --bg-color: #1c1e26; /* Dark slate/navy */
+            --fg-color: #e0e0e0; /* Off-white */
+            --cursor-bg: #d79921; /* Gold/Orange */
+            --cursor-fg: #1c1e26;
+            --status-bg: #2d313b; /* Slightly lighter header */
+            --status-fg: #9da5b3;
+            --accent: #d79921;
+            --selection: #3e4452;
+            --font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            --border-radius: 12px;
+            --shadow: 0 20px 60px rgba(0,0,0,0.6);
+        }
+
+        body {
+            background-color: #0e0e0e;
+            color: #eee;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            transition: background 0.3s;
+        }
+
+        /* Theme Buttons */
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        button:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        .btn-dark { background: #3c3836; color: #ebdbb2; }
+        .btn-light { background: #eee8d5; color: #657b83; }
+        .btn-ghostty { background: #1c1e26; color: #d79921; border: 1px solid #3e4452; }
+
+        /* Game Container */
+        #game-window {
+            width: 900px;
+            height: 600px;
+            background-color: var(--bg-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        /* Header (Pseudo-Window Bar) */
+        #window-bar {
+            background-color: var(--status-bg);
+            color: var(--status-fg);
+            padding: 8px 16px;
+            font-family: sans-serif;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .window-controls { display: flex; gap: 6px; align-items: center; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #555; }
+        [data-theme="ghostty"] .dot:nth-child(1) { background: #ff5f56; }
+        [data-theme="ghostty"] .dot:nth-child(2) { background: #ffbd2e; }
+        [data-theme="ghostty"] .dot:nth-child(3) { background: #27c93f; }
+        
+        .reset-hint {
+            margin-left: 15px;
+            font-size: 11px;
+            opacity: 0.7;
+            background: rgba(0,0,0,0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* The Viewport */
+        #viewport {
+            flex: 1;
+            padding: 30px;
+            font-family: var(--font-family);
+            font-size: 18px;
+            line-height: 1.6;
+            color: var(--fg-color);
+            white-space: pre;
+            overflow: hidden;
+            cursor: text;
+        }
+
+        /* Status Line (Vim Style) */
+        #vim-status {
+            background-color: var(--selection);
+            color: var(--fg-color);
+            padding: 4px 15px;
+            font-family: var(--font-family);
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Cursor & Highlights */
+        .line { display: block; min-height: 1.6em; }
+        .char { display: inline-block; min-width: 1ch; }
+        
+        .cursor {
+            background-color: var(--cursor-bg);
+            color: var(--cursor-fg);
+            font-weight: bold;
+        }
+        
+        .cursor-insert {
+            border-left: 2px solid var(--cursor-bg);
+            margin-left: -1px; /* visual adjustment */
+        }
+
+        /* Helper Classes */
+        .instruction-box {
+            padding: 15px 20px;
+            background: rgba(0,0,0,0.2);
+            font-family: var(--font-family);
+            color: var(--fg-color);
+            font-size: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .key {
+            background: rgba(255,255,255,0.15);
+            color: var(--accent);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        /* Overlay */
+        #overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 10, 10, 0.9);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            display: none; /* Hidden by default */
+            animation: fadeIn 0.2s;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        #overlay h1 { font-family: sans-serif; color: var(--accent); margin-bottom: 10px; }
+        #overlay p { font-family: var(--font-family); color: #ccc; margin-bottom: 30px; }
+        #overlay .next-btn {
+            background: var(--cursor-bg);
+            color: var(--cursor-fg);
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+        }
+        .hidden { display: none !important; }
+
+    </style>
+</head>
+<body data-theme="ghostty">
+
+    <div class="controls">
+        <button class="btn-dark" onclick="setTheme('dark')">Dark</button>
+        <button class="btn-light" onclick="setTheme('light')">Light</button>
+        <button class="btn-ghostty" onclick="setTheme('ghostty')">Ghostty</button>
+    </div>
+
+    <div id="game-window">
+        <div id="window-bar">
+            <div class="window-controls">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <span class="reset-hint">Reset Level: Type <b>:e</b> or <b>Alt+r</b></span>
+            </div>
+            <div id="file-title">lesson.txt</div>
+            <div>user@vim-dojo</div>
+        </div>
+
+        <div class="instruction-box">
+            <span id="level-title" style="font-weight:bold; color:var(--accent)">Level 1</span>: 
+            <span id="task-desc">Loading...</span>
+        </div>
+        
+        <div id="viewport"></div>
+
+        <div id="vim-status">
+            <span id="mode-display">NORMAL</span>
+            <span><span id="keys-buffer"></span> <span id="cursor-pos">1:1</span></span>
+        </div>
+
+        <div id="overlay">
+            <h1 id="overlay-title">LEVEL COMPLETE</h1>
+            <p>Press <span style="border:1px solid #555; padding:2px 6px; border-radius:4px;">ENTER</span> to continue</p>
+            <button class="next-btn" onclick="nextLevel()">Next Level</button>
+        </div>
+    </div>
+
+    <script>
+        // --- GAME ENGINE STATE ---
+        const state = {
+            lines: [],
+            cursor: { r: 0, c: 0 },
+            mode: 'NORMAL', // NORMAL, INSERT, REPLACE, COMMAND
+            currentLevel: 0,
+            keyBuffer: '',
+            history: [] // For undo
+        };
+
+        // --- LEVELS ---
+        const levels = [
+            {
+                title: "Basic Movement",
+                text: [
+                    "Welcome to Vim.",
+                    "The mouse does not work here.",
+                    "",
+                    "       [GOAL]",
+                    "",
+                    "Use h, j, k, l to move cursor."
+                ],
+                target: { r: 3, c: 8 },
+                inst: "Use <span class='key'>h</span>(left) <span class='key'>j</span>(down) <span class='key'>k</span>(up) <span class='key'>l</span>(right) to reach 'G'.",
+                check: () => state.cursor.r === 3 && state.cursor.c === 8
+            },
+            {
+                title: "Word Jumping",
+                text: [
+                    "Moving char by char is inefficient.",
+                    "Use 'w' to jump words forward.",
+                    "Use 'b' to jump words back.",
+                    "",
+                    "Start  jump  to  this  TARGET"
+                ],
+                target: { r: 4, c: 23 },
+                inst: "Press <span class='key'>w</span> repeatedly to jump to 'TARGET'.",
+                check: () => state.cursor.r === 4 && state.cursor.c === 23
+            },
+            {
+                title: "Start & End",
+                text: [
+                    "Jump to Start of line: 0",
+                    "Jump to End of line: $",
+                    "",
+                    "Go to the end -------------------------> E"
+                ],
+                target: { r: 3, c: 41 },
+                inst: "Press <span class='key'>$</span> to jump to the end character 'E'.",
+                check: () => state.cursor.r === 3 && state.cursor.c === 41
+            },
+            {
+                title: "Global Jumps",
+                text: [
+                    "File too long?",
+                    "Press 'gg' to go to the top.",
+                    "Press 'G' (Shift+g) to go to the bottom.",
+                    "",
+                    "...",
+                    "...",
+                    "DOWN HERE"
+                ],
+                inst: "Press <span class='key'>G</span> to jump to the last line, then <span class='key'>gg</span> to go back up.",
+                // Complex check: must visit bottom then return top
+                data: { visitedBottom: false },
+                check: function() {
+                    if (state.cursor.r === 6) this.data.visitedBottom = true;
+                    return this.data.visitedBottom && state.cursor.r === 0;
+                }
+            },
+            {
+                title: "Deleting",
+                text: [
+                    "Use 'x' to delete the character under cursor.",
+                    "",
+                    "Fix this typo:",
+                    "Hellox World"
+                ],
+                inst: "Move to 'x' and press <span class='key'>x</span> to delete it.",
+                check: () => state.lines[3] === "Hello World"
+            },
+            {
+                title: "Replacing",
+                text: [
+                    "Don't delete and insert.",
+                    "Use 'r' then a character to replace.",
+                    "",
+                    "Make this true:",
+                    "Vim is hard."
+                ],
+                inst: "Move to 'h'. Press <span class='key'>r</span> then <span class='key'>e</span> to make it 'easy'.",
+                check: () => state.lines[4] === "Vim is easy."
+            },
+            {
+                title: "Insert Mode",
+                text: [
+                    "Press 'i' to insert text.",
+                    "Press 'Esc' to go back to Normal mode.",
+                    "",
+                    "Fill in the blank:",
+                    "I am ___ today."
+                ],
+                inst: "Go to underscores. Press <span class='key'>i</span>, type a word, press <span class='key'>Esc</span>.",
+                check: () => !state.lines[4].includes("_") && state.mode === 'NORMAL'
+            },
+            {
+                title: "Append Line",
+                text: [
+                    "Press 'A' (Shift+a) to append at line end.",
+                    "",
+                    "Add a period to this sentence"
+                ],
+                inst: "Press <span class='key'>A</span> then type '.' then <span class='key'>Esc</span>.",
+                check: () => state.lines[2].trim() === "Add a period to this sentence." && state.mode === 'NORMAL'
+            },
+            {
+                title: "Undo",
+                text: [
+                    "We all make mistakes.",
+                    "Press 'u' to undo changes.",
+                    "",
+                    "1. Delete me (x)",
+                    "2. Delete me too (x)",
+                    "3. Now bring them back!"
+                ],
+                inst: "Delete the lines/chars, then press <span class='key'>u</span> until fixed.",
+                check: () => state.lines[3].includes("Delete me") && state.lines[4].includes("Delete me too")
+            },
+            {
+                title: "Line Deletion",
+                text: [
+                    "Press 'dd' to delete a whole line.",
+                    "",
+                    "Keep the code, delete the garbage:",
+                    "let x = 10;",
+                    "GARBAGE LINE",
+                    "console.log(x);"
+                ],
+                inst: "Move to 'GARBAGE' line and type <span class='key'>dd</span>.",
+                check: () => state.lines.length === 5 && !state.lines.join('').includes("GARBAGE")
+            },
+            {
+                title: "The Combo",
+                text: [
+                    "Combine your skills.",
+                    "",
+                    "1. Fix: cnsole.log('Hello');",
+                    "2. Delete this line.",
+                    "3. Add '!' at the end."
+                ],
+                inst: "Use <span class='key'>i</span> or <span class='key'>r</span> to fix typo. <span class='key'>dd</span> line 4. <span class='key'>A</span> to add '!'.",
+                check: () => {
+                    const txt = state.lines.join('\n');
+                    return txt.includes("console.log") && !txt.includes("Delete this") && txt.includes("!');");
+                }
+            },
+            {
+                title: "Victory",
+                text: [
+                    "You have completed the Vim Vindicator training.",
+                    "",
+                    "You are now ready to exit...",
+                    "But do you know how?",
+                    "",
+                    "Type :q to quit."
+                ],
+                inst: "Type <span class='key'>:q</span> <span class='key'>Enter</span> to finish.",
+                check: () => false // Handled manually in key handler
+            }
+        ];
+
+        // --- DOM ELEMENTS ---
+        const viewport = document.getElementById('viewport');
+        const modeDisplay = document.getElementById('mode-display');
+        const cursorDisplay = document.getElementById('cursor-pos');
+        const bufferDisplay = document.getElementById('keys-buffer');
+        const instructionText = document.getElementById('task-desc');
+        const levelTitle = document.getElementById('level-title');
+        const overlay = document.getElementById('overlay');
+        const fileTitle = document.getElementById('file-title');
+
+        // --- INIT ---
+        function initLevel(index) {
+            if (index >= levels.length) {
+                index = levels.length - 1;
+            }
+            state.currentLevel = index;
+            // Deep copy lines to ensure reset works cleanly
+            state.lines = [...levels[index].text];
+            state.cursor = { r: 0, c: 0 };
+            state.mode = 'NORMAL';
+            state.keyBuffer = '';
+            state.history = [];
+            
+            // Reset level specific data (like visitedBottom)
+            if (levels[index].data) {
+                // simple reset for boolean flags
+                Object.keys(levels[index].data).forEach(k => levels[index].data[k] = false);
+            }
+
+            overlay.style.display = 'none';
+            fileTitle.innerText = index === levels.length -1 ? "victory.txt" : `lesson_${index+1}.txt`;
+            
+            render();
+        }
+
+        function resetLevel() {
+            initLevel(state.currentLevel);
+        }
+
+        function saveState() {
+            // Push current state string to history (max 50 steps)
+            const snapshot = JSON.stringify({ 
+                lines: state.lines, 
+                cursor: state.cursor 
+            });
+            state.history.push(snapshot);
+            if (state.history.length > 50) state.history.shift();
+        }
+
+        function restoreState() {
+            if (state.history.length === 0) return;
+            const snapshot = JSON.parse(state.history.pop());
+            state.lines = snapshot.lines;
+            state.cursor = snapshot.cursor;
+        }
+
+        function render() {
+            const lvl = levels[state.currentLevel];
+            
+            // UI Updates
+            modeDisplay.innerText = state.mode;
+            modeDisplay.style.fontWeight = state.mode !== 'NORMAL' ? 'bold' : 'normal';
+            modeDisplay.style.color = state.mode !== 'NORMAL' ? 'var(--accent)' : 'inherit';
+            
+            cursorDisplay.innerText = `${state.cursor.r + 1}:${state.cursor.c + 1}`;
+            bufferDisplay.innerText = state.keyBuffer;
+            levelTitle.innerText = `${lvl.title} (${state.currentLevel + 1}/${levels.length})`;
+            instructionText.innerHTML = lvl.inst;
+
+            // Viewport Render
+            viewport.innerHTML = '';
+            
+            state.lines.forEach((line, r) => {
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'line';
+                
+                // If line empty, render a space for height
+                const content = line.length ? line : ' ';
+                
+                // We split string into spans
+                for (let c = 0; c < content.length + 1; c++) {
+                    const span = document.createElement('span');
+                    span.className = 'char';
+                    
+                    // Char content
+                    let char = content[c] || ' ';
+                    if (c >= content.length) char = ' '; // Virtual space at end
+                    
+                    span.textContent = char;
+
+                    // Cursor Logic
+                    const isCursor = (r === state.cursor.r && c === state.cursor.c);
+                    
+                    if (isCursor) {
+                        if (state.mode === 'INSERT') {
+                            span.classList.add('cursor-insert');
+                        } else {
+                            span.classList.add('cursor');
+                        }
+                    }
+
+                    // Goal Highlight (only if not finished)
+                    if (overlay.style.display === 'none' && lvl.target && lvl.target.r === r && lvl.target.c === c) {
+                        span.style.color = 'var(--accent)';
+                        span.style.textDecoration = 'underline';
+                        span.style.fontWeight = 'bold';
+                    }
+
+                    lineDiv.appendChild(span);
+                    
+                    // Normal mode cursor shouldn't go past end unless empty line
+                    if (state.mode === 'NORMAL' && c >= line.length - 1 && line.length > 0) {
+                        if (isCursor) {/*allow*/} 
+                        else if(c >= line.length) break; 
+                    }
+                    if (state.mode === 'INSERT' && c > line.length) break;
+                }
+                viewport.appendChild(lineDiv);
+            });
+
+            // Logic Check
+            if (overlay.style.display === 'none' && lvl.check()) {
+                showVictory();
+            }
+        }
+
+        function showVictory() {
+            if (state.currentLevel === levels.length - 1) return; // Wait for specific command in last level
+            document.getElementById('overlay-title').innerText = "LEVEL COMPLETE";
+            overlay.style.display = 'flex';
+        }
+        
+        function showFinalVictory() {
+            document.getElementById('overlay-title').innerText = "VIM MASTER";
+            document.querySelector('#overlay p').innerText = "You have exited Vim successfully. Refresh to restart.";
+            document.querySelector('.next-btn').style.display = 'none';
+            overlay.style.display = 'flex';
+        }
+
+        function nextLevel() {
+            if (state.currentLevel < levels.length - 1) {
+                initLevel(state.currentLevel + 1);
+            }
+        }
+
+        // --- INPUT HANDLING ---
+
+        window.addEventListener('keydown', (e) => {
+            // Global Shortcuts
+            if (e.altKey && e.key === 'r') {
+                e.preventDefault();
+                resetLevel();
+                return;
+            }
+
+            // Victory Overlay Navigation
+            if (overlay.style.display === 'flex') {
+                if (e.key === 'Enter') nextLevel();
+                return;
+            }
+
+            // Prevent browser scrolling
+            if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) {
+                e.preventDefault();
+            }
+
+            if (state.mode === 'NORMAL') handleNormal(e);
+            else if (state.mode === 'INSERT') handleInsert(e);
+            else if (state.mode === 'REPLACE') handleReplace(e);
+            else if (state.mode === 'COMMAND') handleCommand(e);
+
+            const maxRow = Math.max(0, state.lines.length - 1);
+            if (state.cursor.r > maxRow) state.cursor.r = maxRow;
+            
+            const lineLen = state.lines[state.cursor.r].length;
+            
+            // Constrain cursor columns
+            if (state.mode === 'NORMAL') {
+                // On empty line, c=0. On text, max is len-1
+                let maxCol = Math.max(0, lineLen - 1);
+                if (lineLen === 0) maxCol = 0;
+                if (state.cursor.c > maxCol) state.cursor.c = maxCol;
+            } else {
+                // Insert allow 1 past end
+                if (state.cursor.c > lineLen) state.cursor.c = lineLen;
+            }
+
+            render();
+        });
+
+        function handleNormal(e) {
+            const key = e.key;
+
+            // Check Buffer for double keys
+            if (state.keyBuffer) {
+                const cmd = state.keyBuffer + key;
+                state.keyBuffer = ''; // clear buffer
+                
+                if (cmd === 'gg') { state.cursor.r = 0; state.cursor.c = 0; return; }
+                if (cmd === 'dd') {
+                    saveState();
+                    state.lines.splice(state.cursor.r, 1);
+                    if (state.lines.length === 0) state.lines.push("");
+                    return;
+                }
+                return;
+            }
+
+            // Single Key Actions
+            switch(key) {
+                // Movement
+                case 'h': if (state.cursor.c > 0) state.cursor.c--; break;
+                case 'l': state.cursor.c++; break;
+                case 'j': if (state.cursor.r < state.lines.length - 1) state.cursor.r++; break;
+                case 'k': if (state.cursor.r > 0) state.cursor.r--; break;
+                
+                case 'w': moveWordForward(); break;
+                case 'b': moveWordBack(); break;
+                case '0': state.cursor.c = 0; break;
+                case '$': state.cursor.c = 999; break; // Will be clamped
+                
+                case 'G': state.cursor.r = state.lines.length - 1; state.cursor.c = 0; break;
+
+                // Action Triggers
+                case 'g': state.keyBuffer = 'g'; break;
+                case 'd': state.keyBuffer = 'd'; break;
+
+                // Edits
+                case 'x': 
+                    saveState();
+                    deleteChar(); 
+                    break;
+                case 'u': 
+                    restoreState(); 
+                    break;
+                case 'r':
+                    state.mode = 'REPLACE';
+                    break;
+
+                // Modes
+                case 'i': state.mode = 'INSERT'; break;
+                case 'a': state.mode = 'INSERT'; state.cursor.c++; break;
+                case 'A': state.mode = 'INSERT'; state.cursor.c = 999; break; // Clamp handles end
+                
+                // Command
+                case ':': 
+                    state.mode = 'COMMAND'; 
+                    state.keyBuffer = ':'; 
+                    break;
+            }
+        }
+
+        function handleInsert(e) {
+            if (e.key === 'Escape') {
+                state.mode = 'NORMAL';
+                // Move cursor back 1
+                if (state.cursor.c > 0) state.cursor.c--;
+                return;
+            }
+
+            saveState();
+
+            const line = state.lines[state.cursor.r];
+            
+            if (e.key === 'Backspace') {
+                if (state.cursor.c > 0) {
+                    state.lines[state.cursor.r] = line.slice(0, state.cursor.c - 1) + line.slice(state.cursor.c);
+                    state.cursor.c--;
+                }
+            } else if (e.key.length === 1) {
+                state.lines[state.cursor.r] = line.slice(0, state.cursor.c) + e.key + line.slice(state.cursor.c);
+                state.cursor.c++;
+            }
+        }
+
+        function handleReplace(e) {
+            if (e.key === 'Escape') {
+                state.mode = 'NORMAL';
+                return;
+            }
+            if (e.key.length === 1) {
+                saveState();
+                const line = state.lines[state.cursor.r];
+                if (line.length > 0) {
+                    state.lines[state.cursor.r] = line.substring(0, state.cursor.c) + e.key + line.substring(state.cursor.c + 1);
+                }
+                state.mode = 'NORMAL';
+            }
+        }
+
+        function handleCommand(e) {
+            if (e.key === 'Escape') {
+                state.mode = 'NORMAL';
+                state.keyBuffer = '';
+                return;
+            }
+            if (e.key === 'Enter') {
+                const cmd = state.keyBuffer.trim();
+                
+                // --- COMMAND LOGIC ---
+                if (cmd === ':q' || cmd === ':wq' || cmd === ':x') {
+                    if (state.currentLevel === levels.length - 1) {
+                        showFinalVictory();
+                    } else {
+                        // Not end of game
+                        state.mode = 'NORMAL';
+                        state.keyBuffer = '';
+                    }
+                } 
+                else if (cmd === ':e' || cmd === ':e!' || cmd === ':reset') {
+                    resetLevel();
+                }
+                else {
+                    // Unknown command
+                    state.mode = 'NORMAL';
+                    state.keyBuffer = '';
+                }
+                return;
+            }
+            if (e.key === 'Backspace') {
+                state.keyBuffer = state.keyBuffer.slice(0, -1);
+                if (state.keyBuffer.length === 0) state.mode = 'NORMAL';
+                return;
+            }
+            if (e.key.length === 1) {
+                state.keyBuffer += e.key;
+            }
+        }
+
+        // --- HELPERS ---
+        function deleteChar() {
+            const line = state.lines[state.cursor.r];
+            if (!line) return;
+            state.lines[state.cursor.r] = line.slice(0, state.cursor.c) + line.slice(state.cursor.c + 1);
+        }
+
+        function moveWordForward() {
+            const line = state.lines[state.cursor.r];
+            let i = state.cursor.c;
+            if (line[i] !== ' ') {
+                while(i < line.length && line[i] !== ' ') i++;
+                while(i < line.length && line[i] === ' ') i++;
+            } else {
+                while(i < line.length && line[i] === ' ') i++;
+            }
+            if (i >= line.length) {
+                if (state.cursor.r < state.lines.length - 1) {
+                    state.cursor.r++;
+                    state.cursor.c = 0;
+                    let nextLine = state.lines[state.cursor.r];
+                    let j = 0;
+                    while(j < nextLine.length && nextLine[j] === ' ') j++;
+                    state.cursor.c = j;
+                }
+            } else {
+                state.cursor.c = i;
+            }
+        }
+
+        function moveWordBack() {
+             let r = state.cursor.r;
+             let c = state.cursor.c;
+             if (c === 0) {
+                 if (r > 0) {
+                     r--;
+                     c = state.lines[r].length - 1;
+                 } else { return; }
+             } else { c--; }
+             const line = state.lines[r];
+             while (c > 0 && line[c] === ' ') c--;
+             while (c > 0 && line[c-1] !== ' ') c--;
+             state.cursor.r = r;
+             state.cursor.c = c;
+        }
+
+        function setTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+            document.body.focus();
+        }
+
+        // Start
+        initLevel(0);
+
+    </script>
+</body>
+</html>
