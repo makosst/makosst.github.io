@@ -57,15 +57,15 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
+            justify-content: space-between;
+            min-height: 100vh;
             margin: 0;
             transition: background 0.3s;
         }
 
         /* Theme Buttons */
         .controls {
-            margin-bottom: 20px;
+            margin: 20px 0;
             display: flex;
             gap: 10px;
         }
@@ -114,7 +114,7 @@
         [data-theme="ghostty"] .dot:nth-child(1) { background: #ff5f56; }
         [data-theme="ghostty"] .dot:nth-child(2) { background: #ffbd2e; }
         [data-theme="ghostty"] .dot:nth-child(3) { background: #27c93f; }
-        
+
         .reset-hint {
             margin-left: 15px;
             font-size: 11px;
@@ -151,13 +151,13 @@
         /* Cursor & Highlights */
         .line { display: block; min-height: 1.6em; }
         .char { display: inline-block; min-width: 1ch; }
-        
+
         .cursor {
             background-color: var(--cursor-bg);
             color: var(--cursor-fg);
             font-weight: bold;
         }
-        
+
         .cursor-insert {
             border-left: 2px solid var(--cursor-bg);
             margin-left: -1px; /* visual adjustment */
@@ -195,7 +195,7 @@
             animation: fadeIn 0.2s;
         }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
+
         #overlay h1 { font-family: sans-serif; color: var(--accent); margin-bottom: 10px; }
         #overlay p { font-family: var(--font-family); color: #ccc; margin-bottom: 30px; }
         #overlay .next-btn {
@@ -208,6 +208,42 @@
         }
         .hidden { display: none !important; }
 
+        /* Footer Section */
+        .footer {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: #ffffff;
+            opacity: 0.9;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+        }
+
+        .footer p {
+            margin: 5px 0;
+            font-weight: normal;
+        }
+
+        .link {
+            color: #ffffff;
+            text-decoration: none;
+            border-bottom: 1px solid #ffffff;
+            transition: opacity 0.2s;
+        }
+
+        .link:hover {
+            opacity: 0.7;
+        }
+
+        .blue-link {
+            color: #5dade2;
+            text-decoration: none;
+            border-bottom: 1px solid #5dade2;
+            transition: opacity 0.2s;
+        }
+
+        .blue-link:hover {
+            opacity: 0.7;
+        }
     </style>
 </head>
 <body data-theme="ghostty">
@@ -231,10 +267,10 @@
         </div>
 
         <div class="instruction-box">
-            <span id="level-title" style="font-weight:bold; color:var(--accent)">Level 1</span>: 
+            <span id="level-title" style="font-weight:bold; color:var(--accent)">Level 1</span>:
             <span id="task-desc">Loading...</span>
         </div>
-        
+
         <div id="viewport"></div>
 
         <div id="vim-status">
@@ -247,6 +283,10 @@
             <p>Press <span style="border:1px solid #555; padding:2px 6px; border-radius:4px;">ENTER</span> to continue</p>
             <button class="next-btn" onclick="nextLevel()">Next Level</button>
         </div>
+    </div>
+
+    <div class="footer">
+        <p>shamelessly vibecoded by <a href="https://twitter.com/kosmarun" target="_blank" class="blue-link">kosmarun</a></p>
     </div>
 
     <script>
@@ -443,7 +483,7 @@
             state.mode = 'NORMAL';
             state.keyBuffer = '';
             state.history = [];
-            
+
             // Reset level specific data (like visitedBottom)
             if (levels[index].data) {
                 // simple reset for boolean flags
@@ -452,7 +492,7 @@
 
             overlay.style.display = 'none';
             fileTitle.innerText = index === levels.length -1 ? "victory.txt" : `lesson_${index+1}.txt`;
-            
+
             render();
         }
 
@@ -462,9 +502,9 @@
 
         function saveState() {
             // Push current state string to history (max 50 steps)
-            const snapshot = JSON.stringify({ 
-                lines: state.lines, 
-                cursor: state.cursor 
+            const snapshot = JSON.stringify({
+                lines: state.lines,
+                cursor: state.cursor
             });
             state.history.push(snapshot);
             if (state.history.length > 50) state.history.shift();
@@ -479,12 +519,12 @@
 
         function render() {
             const lvl = levels[state.currentLevel];
-            
+
             // UI Updates
             modeDisplay.innerText = state.mode;
             modeDisplay.style.fontWeight = state.mode !== 'NORMAL' ? 'bold' : 'normal';
             modeDisplay.style.color = state.mode !== 'NORMAL' ? 'var(--accent)' : 'inherit';
-            
+
             cursorDisplay.innerText = `${state.cursor.r + 1}:${state.cursor.c + 1}`;
             bufferDisplay.innerText = state.keyBuffer;
             levelTitle.innerText = `${lvl.title} (${state.currentLevel + 1}/${levels.length})`;
@@ -492,28 +532,28 @@
 
             // Viewport Render
             viewport.innerHTML = '';
-            
+
             state.lines.forEach((line, r) => {
                 const lineDiv = document.createElement('div');
                 lineDiv.className = 'line';
-                
+
                 // If line empty, render a space for height
                 const content = line.length ? line : ' ';
-                
+
                 // We split string into spans
                 for (let c = 0; c < content.length + 1; c++) {
                     const span = document.createElement('span');
                     span.className = 'char';
-                    
+
                     // Char content
                     let char = content[c] || ' ';
                     if (c >= content.length) char = ' '; // Virtual space at end
-                    
+
                     span.textContent = char;
 
                     // Cursor Logic
                     const isCursor = (r === state.cursor.r && c === state.cursor.c);
-                    
+
                     if (isCursor) {
                         if (state.mode === 'INSERT') {
                             span.classList.add('cursor-insert');
@@ -530,11 +570,10 @@
                     }
 
                     lineDiv.appendChild(span);
-                    
+
                     // Normal mode cursor shouldn't go past end unless empty line
                     if (state.mode === 'NORMAL' && c >= line.length - 1 && line.length > 0) {
-                        if (isCursor) {/*allow*/} 
-                        else if(c >= line.length) break; 
+                        if (isCursor) {/*allow*/} else if(c >= line.length) break;
                     }
                     if (state.mode === 'INSERT' && c > line.length) break;
                 }
@@ -552,7 +591,7 @@
             document.getElementById('overlay-title').innerText = "LEVEL COMPLETE";
             overlay.style.display = 'flex';
         }
-        
+
         function showFinalVictory() {
             document.getElementById('overlay-title').innerText = "VIM MASTER";
             document.querySelector('#overlay p').innerText = "You have exited Vim successfully. Refresh to restart.";
@@ -594,9 +633,9 @@
 
             const maxRow = Math.max(0, state.lines.length - 1);
             if (state.cursor.r > maxRow) state.cursor.r = maxRow;
-            
+
             const lineLen = state.lines[state.cursor.r].length;
-            
+
             // Constrain cursor columns
             if (state.mode === 'NORMAL') {
                 // On empty line, c=0. On text, max is len-1
@@ -618,7 +657,7 @@
             if (state.keyBuffer) {
                 const cmd = state.keyBuffer + key;
                 state.keyBuffer = ''; // clear buffer
-                
+
                 if (cmd === 'gg') { state.cursor.r = 0; state.cursor.c = 0; return; }
                 if (cmd === 'dd') {
                     saveState();
@@ -636,12 +675,12 @@
                 case 'l': state.cursor.c++; break;
                 case 'j': if (state.cursor.r < state.lines.length - 1) state.cursor.r++; break;
                 case 'k': if (state.cursor.r > 0) state.cursor.r--; break;
-                
+
                 case 'w': moveWordForward(); break;
                 case 'b': moveWordBack(); break;
                 case '0': state.cursor.c = 0; break;
                 case '$': state.cursor.c = 999; break; // Will be clamped
-                
+
                 case 'G': state.cursor.r = state.lines.length - 1; state.cursor.c = 0; break;
 
                 // Action Triggers
@@ -649,12 +688,12 @@
                 case 'd': state.keyBuffer = 'd'; break;
 
                 // Edits
-                case 'x': 
+                case 'x':
                     saveState();
-                    deleteChar(); 
+                    deleteChar();
                     break;
-                case 'u': 
-                    restoreState(); 
+                case 'u':
+                    restoreState();
                     break;
                 case 'r':
                     state.mode = 'REPLACE';
@@ -664,11 +703,11 @@
                 case 'i': state.mode = 'INSERT'; break;
                 case 'a': state.mode = 'INSERT'; state.cursor.c++; break;
                 case 'A': state.mode = 'INSERT'; state.cursor.c = 999; break; // Clamp handles end
-                
+
                 // Command
-                case ':': 
-                    state.mode = 'COMMAND'; 
-                    state.keyBuffer = ':'; 
+                case ':':
+                    state.mode = 'COMMAND';
+                    state.keyBuffer = ':';
                     break;
             }
         }
@@ -684,7 +723,7 @@
             saveState();
 
             const line = state.lines[state.cursor.r];
-            
+
             if (e.key === 'Backspace') {
                 if (state.cursor.c > 0) {
                     state.lines[state.cursor.r] = line.slice(0, state.cursor.c - 1) + line.slice(state.cursor.c);
@@ -719,7 +758,7 @@
             }
             if (e.key === 'Enter') {
                 const cmd = state.keyBuffer.trim();
-                
+
                 // --- COMMAND LOGIC ---
                 if (cmd === ':q' || cmd === ':wq' || cmd === ':x') {
                     if (state.currentLevel === levels.length - 1) {
@@ -729,7 +768,7 @@
                         state.mode = 'NORMAL';
                         state.keyBuffer = '';
                     }
-                } 
+                }
                 else if (cmd === ':e' || cmd === ':e!' || cmd === ':reset') {
                     resetLevel();
                 }
