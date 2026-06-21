@@ -7,4 +7,4 @@ title: My Blog
 
 ## Table of contents
 
-- [About Me](/posts/about.html)
+- [About Me](/posts/about.md)
