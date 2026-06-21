@@ -33,7 +33,7 @@ As Apple introduced ATT, gaming publishers earned less revenue, and fewer studio
 I tried to pivot into building a bigger game - we built a prototype, tried to raise funding for it, and failed. In the end, I was left with nothing and the company itself closed.
 
 **20 y.o.:**
-Moved to SF, spent a lot of time trying to build something people want. Some projects got very slight traction — a few startups in Founders Inc. subscribed to use my rendering service, and a graph-based coding agent I built was able to disassemble large repos into interactive graphs. This was added to a few big repositories, but did not get massive real usage.
+Moved to SF, spent a lot of time trying to build something people want. Some projects got very slight traction - a few startups in Founders Inc. subscribed to use my rendering service, and a graph-based coding agent I built was able to disassemble large repos into interactive graphs. This was added to a few big repositories, but did not get massive real usage.
 
 **21 y.o.:**
 Got my first job in a while, as engineer #2 at Echelon. Built AI pipelines that scaled us from first pilots to being adopted by a few mid-scale enterprises and PE firms. This allowed the team to scale and get on a pretty steep growth trajectory.
