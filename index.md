@@ -7,5 +7,5 @@ title: My Blog
 
 ## Table of contents
 
-- [First post](/posts/first-post.html)
+- [About Me](/posts/about.html)
 - [Second post](/posts/second-post.html)
