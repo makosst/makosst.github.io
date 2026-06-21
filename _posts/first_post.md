@@ -1,7 +1,15 @@
 ---
-layout: post
-title: "My First Post"
-date: 2026-06-21
+layout: default
+title: First Post
 ---
 
-Hello, this is my first blog post.
+[← Back](/)
+
+# First Post
+
+This is my first post.
+
+It is written in **Markdown**.
+
+```js
+console.log("hello");
