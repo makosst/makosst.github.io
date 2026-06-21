@@ -30,7 +30,7 @@ Around $10K monthly revenue, $6K net. The team scaled to 6 employees in Ukraine,
 **18 y.o.:**
 As Apple introduced ATT, gaming publishers earned less revenue, and fewer studios were getting any money from them. So our renewals were not happening and contracts were slowly getting canceled.
 
-I tried to pivot into building a bigger game — we built a prototype, tried to raise funding for it, and failed. In the end, I was left with nothing and the company itself closed.
+I tried to pivot into building a bigger game - we built a prototype, tried to raise funding for it, and failed. In the end, I was left with nothing and the company itself closed.
 
 **20 y.o.:**
 Moved to SF, spent a lot of time trying to build something people want. Some projects got very slight traction — a few startups in Founders Inc. subscribed to use my rendering service, and a graph-based coding agent I built was able to disassemble large repos into interactive graphs. This was added to a few big repositories, but did not get massive real usage.
