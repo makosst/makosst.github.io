@@ -3,8 +3,6 @@ layout: default
 title: My Blog
 ---
 
-# Konstantin Marunchenko Blog
-
-## Table of contents
+## Konstantin Marunchenko Blog
 
 - [About Me](/posts/about.html)
