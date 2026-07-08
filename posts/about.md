@@ -35,4 +35,4 @@ I tried to pivot into building a bigger game - we built a prototype, tried to ra
 Moved to SF, spent a lot of time trying to build something people want. Some projects got very slight traction - a few startups in Founders Inc. subscribed to use my rendering service, and a graph-based coding agent I built was able to disassemble large repos into interactive graphs. This was added to a few big repositories, but did not get massive real usage.
 
 **21 y.o.:**
-Got my first job in a while, as engineer #2 at Echelon. Built AI pipelines that scaled us from first pilots to being adopted by a few mid-scale enterprises and PE firms. This allowed the team to scale and get on a pretty steep growth trajectory.
+Got my first job in a while, as founding engineer at Echelon. Built AI pipelines that scaled us from first pilots to being adopted by a few mid-scale enterprises and PE firms. This allowed the team to scale and get on a pretty steep growth trajectory.
